@@ -1,0 +1,52 @@
+{
+  "name": "mathbank-tikz-ai-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MathBank TikZ AI Studio: image input, geometry scene model, TikZ generation, LaTeX preview, ex_test wrapping, interactive editor, and local library.",
+  "author": "MathBank",
+  "type": "commonjs",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "node server/server.js",
+    "start": "node server/server.js",
+    "desktop": "electron .",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.mathbank.tikzstudio",
+    "productName": "MathBank TikZ Studio",
+    "files": [
+      "electron/**/*",
+      "server/**/*",
+      "src/**/*",
+      "index.html"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

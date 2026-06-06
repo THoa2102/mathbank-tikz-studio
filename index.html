@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MathBank TikZ Studio</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Dieu huong MathBank">
+        <div class="brand">
+          <span class="brand-mark">M</span>
+          <div>
+            <strong>MathBank</strong>
+            <span>TikZ Studio</span>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-item muted" type="button">Ngân hàng câu hỏi</button>
+          <button class="nav-item muted" type="button">Ngân hàng đề thi</button>
+          <button class="nav-item muted" type="button">Soạn đề ex_test</button>
+          <button class="nav-item active" type="button">TikZ AI Studio</button>
+          <button class="nav-item muted" type="button">Thư viện hình vẽ</button>
+          <button class="nav-item muted" type="button">Xuất PDF / LaTeX</button>
+        </nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <h1>TikZ AI Studio</h1>
+            <p>Image → JSON hình học → TikZ → Preview → Copy</p>
+          </div>
+          <div class="topbar-actions">
+            <button id="compileButton" class="button primary" type="button">Compile preview</button>
+            <button id="saveButton" class="button" type="button">Lưu hình</button>
+            <button id="settingsButton" class="button" type="button" title="Cài đặt">⚙ Cài đặt</button>
+          </div>
+        </header>
+
+        <section class="studio-grid" aria-label="TikZ Studio workspace">
+          <section class="panel input-panel">
+            <div class="panel-header">
+              <h2>Ảnh đầu vào</h2>
+              <button id="clearImageButton" class="ghost-button" type="button">Xóa</button>
+            </div>
+
+            <label id="dropZone" class="drop-zone" for="imageInput">
+              <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+              <img id="sourceImage" alt="Ảnh hình Toán đã nhập" hidden />
+              <span id="emptyDropState">Dán, kéo thả, hoặc tải ảnh</span>
+            </label>
+
+            <div class="toolbar compact">
+              <button id="pasteImageButton" class="button small" type="button">Dán ảnh</button>
+              <button id="contrastButton" class="button small" type="button">Tăng nét</button>
+              <button id="monoButton" class="button small" type="button">Đen trắng</button>
+            </div>
+
+            <div class="control-group">
+              <label for="figureTemplate">Mẫu hình</label>
+              <select id="figureTemplate">
+                <option value="triangle">Tam giác có đường cao</option>
+                <option value="circle">Đường tròn và dây cung</option>
+                <option value="parabola">Trục tọa độ và parabol</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="generatorNote">Ghi chú sinh hình</label>
+              <textarea id="generatorNote" rows="3">Vẽ gọn, nhãn rõ, ưu tiên TikZ thuần tương thích ex_test.</textarea>
+            </div>
+
+            <div class="ai-block">
+              <div class="ai-row">
+                <button id="analyzeButton" class="button full primary" type="button">Phân tích ảnh bằng AI</button>
+                <span id="aiStatus" class="status-pill">Đang kiểm tra AI…</span>
+              </div>
+              <p class="ai-hint">AI đọc ảnh đã nhập rồi sinh TikZ. Cần ảnh đầu vào và GEMINI_API_KEY.</p>
+              <div id="aiReport" class="ai-report" hidden></div>
+            </div>
+
+            <button id="generateButton" class="button full" type="button">Sinh từ mẫu cố định</button>
+          </section>
+
+          <section class="panel preview-panel">
+            <div class="panel-header">
+              <h2>Preview</h2>
+              <div class="toolbar">
+                <button id="undoButton" class="ghost-button" type="button" title="Hoàn tác" disabled>↶ Hoàn tác</button>
+                <button id="redoButton" class="ghost-button" type="button" title="Làm lại" disabled>↷ Làm lại</button>
+                <span id="previewStatus" class="status-pill">Chưa compile</span>
+              </div>
+            </div>
+            <div id="previewStage" class="preview-stage" aria-live="polite">
+              <div id="browserPreview" class="browser-preview"></div>
+              <img id="compiledPreview" class="compiled-preview" alt="Preview TikZ đã compile" hidden />
+            </div>
+            <div id="inspector" class="inspector" hidden>
+              <div class="inspector-row">
+                <strong>Điểm <span id="inspId"></span></strong>
+                <button id="inspDeselect" class="ghost-button" type="button">Bỏ chọn</button>
+              </div>
+              <div class="inspector-grid">
+                <label>x <input id="inspX" type="number" step="0.1" /></label>
+                <label>y <input id="inspY" type="number" step="0.1" /></label>
+                <label>Vị trí nhãn
+                  <select id="inspLabelPos">
+                    <option value="above">trên</option>
+                    <option value="below">dưới</option>
+                    <option value="left">trái</option>
+                    <option value="right">phải</option>
+                    <option value="above left">trên-trái</option>
+                    <option value="above right">trên-phải</option>
+                    <option value="below left">dưới-trái</option>
+                    <option value="below right">dưới-phải</option>
+                  </select>
+                </label>
+                <label class="inspector-check"><input id="inspVisible" type="checkbox" /> Hiện điểm</label>
+              </div>
+            </div>
+            <p id="editHint" class="edit-hint">Bấm vào một điểm trên hình để chọn, kéo để di chuyển. Mọi thay đổi tự sinh lại TikZ.</p>
+          </section>
+
+          <section class="panel editor-panel">
+            <div class="panel-header">
+              <h2>Code TikZ</h2>
+              <div class="toolbar">
+                <button id="copyButton" class="ghost-button" type="button">Copy</button>
+                <button id="exportButton" class="ghost-button" type="button">Đóng gói / Xuất</button>
+              </div>
+            </div>
+            <textarea id="tikzCode" class="code-editor" spellcheck="false"></textarea>
+          </section>
+
+          <section class="panel model-panel">
+            <div class="panel-header">
+              <h2>JSON hình học</h2>
+              <button id="resetModelButton" class="ghost-button" type="button">Khôi phục</button>
+            </div>
+            <textarea id="sceneJson" class="json-editor" spellcheck="false"></textarea>
+          </section>
+
+          <section class="panel correction-panel">
+            <div class="panel-header">
+              <h2>Sửa bằng lệnh AI</h2>
+              <button id="clearChatButton" class="ghost-button" type="button">Xóa hội thoại</button>
+            </div>
+            <div id="chatLog" class="chat-log" aria-live="polite"></div>
+            <form id="chatForm" class="chat-input">
+              <textarea id="chatInput" rows="2" placeholder="Ví dụ: đưa nhãn A sang trái · đổi AH thành nét đứt · thêm góc vuông tại H"></textarea>
+              <button id="chatSend" class="button primary" type="submit">Gửi</button>
+            </form>
+          </section>
+
+          <section class="panel library-panel">
+            <div class="panel-header">
+              <h2>Thư viện hình (SQLite)</h2>
+              <div class="toolbar">
+                <button id="exportLibraryButton" class="ghost-button" type="button">Xuất .tex</button>
+                <button id="reloadLibraryButton" class="ghost-button" type="button">Làm mới</button>
+              </div>
+            </div>
+
+            <form id="assetForm" class="asset-form">
+              <input id="assetTitle" type="text" placeholder="Tên hình" />
+              <input id="assetGrade" type="number" min="1" max="12" placeholder="Lớp" />
+              <input id="assetChapter" type="text" placeholder="Chương" />
+              <input id="assetLesson" type="text" placeholder="Bài" />
+              <select id="assetDifficulty">
+                <option value="">Mức độ</option>
+                <option value="NB">NB</option>
+                <option value="TH">TH</option>
+                <option value="VD">VD</option>
+                <option value="VDC">VDC</option>
+              </select>
+              <button class="button small primary" type="submit">Lưu vào thư viện</button>
+            </form>
+
+            <div class="library-search">
+              <input id="librarySearch" type="search" placeholder="Tìm theo tên / chương / bài / dạng" />
+              <select id="filterGrade">
+                <option value="">Tất cả lớp</option>
+                <option value="6">Lớp 6</option>
+                <option value="7">Lớp 7</option>
+                <option value="8">Lớp 8</option>
+                <option value="9">Lớp 9</option>
+                <option value="10">Lớp 10</option>
+                <option value="11">Lớp 11</option>
+                <option value="12">Lớp 12</option>
+              </select>
+            </div>
+
+            <div id="libraryList" class="library-list"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="settingsModal" class="modal-overlay" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Cài đặt">
+        <div class="modal-header">
+          <h2>Cài đặt</h2>
+          <button id="settingsClose" class="ghost-button" type="button">Đóng</button>
+        </div>
+        <div class="modal-body">
+          <div class="control-group">
+            <label for="settingsApiKey">Gemini API key</label>
+            <input id="settingsApiKey" type="password" placeholder="Dán API key vào đây" autocomplete="off" />
+            <p class="ai-hint">Lấy key tại <span class="link-like">aistudio.google.com/apikey</span>. Key được lưu trên máy này.</p>
+          </div>
+          <div class="control-group">
+            <label for="settingsModel">Model</label>
+            <select id="settingsModel">
+              <option value="gemini-2.5-flash">gemini-2.5-flash (nhanh, mặc định)</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro (chính xác hơn, chậm hơn)</option>
+            </select>
+          </div>
+          <div id="settingsStatus" class="ai-report" hidden></div>
+        </div>
+        <div class="modal-footer">
+          <span class="modal-hint">App cần cài sẵn LaTeX (MacTeX / MiKTeX) để compile preview.</span>
+          <div class="toolbar">
+            <button id="settingsSave" class="button primary" type="button">Lưu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="exportModal" class="modal-overlay" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Đóng gói và xuất">
+        <div class="modal-header">
+          <h2>Đóng gói &amp; Xuất .tex</h2>
+          <button id="exportClose" class="ghost-button" type="button">Đóng</button>
+        </div>
+        <div class="modal-body">
+          <div class="export-controls">
+            <div class="control-group">
+              <label for="wrapMode">Chế độ chèn</label>
+              <select id="wrapMode">
+                <option value="center">Chỉ hình (center)</option>
+                <option value="immini">immini (đề + hình cạnh nhau)</option>
+                <option value="ex">Câu hỏi ex_test</option>
+              </select>
+            </div>
+            <div class="control-group" id="qTypeGroup" hidden>
+              <label for="qType">Dạng câu hỏi</label>
+              <select id="qType">
+                <option value="none">Chỉ thân (không đáp án)</option>
+                <option value="choice">Trắc nghiệm 4 đáp án</option>
+                <option value="choiceTF">Đúng / Sai</option>
+                <option value="shortans">Trả lời ngắn</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="control-group" id="questionGroup" hidden>
+            <label for="qContent">Nội dung câu hỏi</label>
+            <textarea id="qContent" rows="2">Cho hình vẽ sau.</textarea>
+          </div>
+
+          <div class="control-group" id="choiceGroup" hidden>
+            <label>Đáp án (chọn đáp án đúng)</label>
+            <div class="opt-row"><input type="radio" name="correctChoice" value="0" checked /><input class="opt-input" data-choice="0" placeholder="Đáp án A" /></div>
+            <div class="opt-row"><input type="radio" name="correctChoice" value="1" /><input class="opt-input" data-choice="1" placeholder="Đáp án B" /></div>
+            <div class="opt-row"><input type="radio" name="correctChoice" value="2" /><input class="opt-input" data-choice="2" placeholder="Đáp án C" /></div>
+            <div class="opt-row"><input type="radio" name="correctChoice" value="3" /><input class="opt-input" data-choice="3" placeholder="Đáp án D" /></div>
+          </div>
+
+          <div class="control-group" id="tfGroup" hidden>
+            <label>Mệnh đề (tích vào mệnh đề đúng)</label>
+            <div class="opt-row"><input type="checkbox" data-tf="0" /><input class="tf-input" data-tf="0" placeholder="Mệnh đề a)" /></div>
+            <div class="opt-row"><input type="checkbox" data-tf="1" /><input class="tf-input" data-tf="1" placeholder="Mệnh đề b)" /></div>
+            <div class="opt-row"><input type="checkbox" data-tf="2" /><input class="tf-input" data-tf="2" placeholder="Mệnh đề c)" /></div>
+            <div class="opt-row"><input type="checkbox" data-tf="3" /><input class="tf-input" data-tf="3" placeholder="Mệnh đề d)" /></div>
+          </div>
+
+          <div class="control-group" id="shortGroup" hidden>
+            <label for="shortAns">Đáp án ngắn</label>
+            <input id="shortAns" type="text" placeholder="VD: 5" />
+          </div>
+
+          <div class="control-group" id="solGroup" hidden>
+            <label for="solContent">Lời giải</label>
+            <textarea id="solContent" rows="2"></textarea>
+          </div>
+
+          <div class="control-group">
+            <label for="exportOutput">Kết quả</label>
+            <textarea id="exportOutput" class="code-editor" spellcheck="false" readonly></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <span class="modal-hint">Tải .tex tạo file biên dịch được (cần gói <code>ex_test</code>).</span>
+          <div class="toolbar">
+            <button id="exportCopy" class="button" type="button">Copy</button>
+            <button id="exportDownload" class="button primary" type="button">Tải .tex</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/src/main.js" defer></script>
+  </body>
+</html>

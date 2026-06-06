@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+.env
+storage/
+dist/
+.tmp/
+*.log
+*.aux
+*.dvi
+*.pdf
+*.svg
