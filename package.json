@@ -1,6 +1,6 @@
 {
   "name": "mathbank-tikz-ai-studio",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "MathBank TikZ AI Studio: image input, geometry scene model, TikZ generation, LaTeX preview, ex_test wrapping, interactive editor, and local library.",
   "author": "MathBank",

@@ -233,6 +233,14 @@ QUY TAC VE CHU/TEXT trong hinh (rat quan trong, neu sai se loi bien dich):
 - Neu trong pgfplots, dung \node[anchor=...] at (axis cs:x,y) {...} de dat chu o dung toa do du lieu.
 - Trong tkz-euclide dung \tkzLabelPoint / \node de dat chu, khong de chu lo ra ngoai.
 
+QUY TAC VE DUONG CONG MUOT (rat quan trong - dung de bi gay khuc):
+- Voi do thi ham so quen thuoc (parabol, bac ba, bac bon, $1/x$, sin, cos, mu, log...): UU TIEN ve bang BIEU THUC, uoc luong he so tu hinh:
+  \addplot[red, thick, smooth, domain=a:b, samples=100] {bieu_thuc};
+- Neu BUOC phai dung danh sach diem (coordinates) vi khong ro ham: BAT BUOC them "smooth" va lay nhieu diem o khuc cong:
+  \addplot[red, thick, smooth] coordinates {(x1,y1) (x2,y2) ...};
+- Voi TikZ thuan: dung \draw[smooth, thick] plot coordinates {...}; hoac \draw[thick] (A) to[out=.., in=..] (B); KHONG noi diem bang doan thang.
+- CHI ve gay khuc (khong smooth) khi hinh that su la duong gap khuc/da giac. Duong tron, cung, parabol... phai cong muot.
+
 QUY TAC DAT TEN DUONG/HAM/MIEN (vd y=f(x), (C), (P), (d)):
 - Dat ten o DAU BEN PHAI cua duong, bang \node[right] (hoac [above right]) tai diem cuoi ben phai cua duong, KHONG de nhan de len duong.
 - Vi du voi do thi: \node[right] at (<diem cuoi phai cua duong>) {$y=f(x)$};
@@ -371,6 +379,7 @@ Quy tac bat buoc:
 - MOI chu/nhan phai nam BEN TRONG tikzpicture (dat bang \node), KHONG de chu roi giua \end{tikzpicture} va \end{center}. Giu nguyen dau tieng Viet, chinh xac tung ky tu.
 - PHAI escape ky tu dac biet trong text: \% \& \# \_ ; chi so/cong thuc dat trong $...$. Giu net ve "line width=1pt". Ten duong/ham (vd $y=f(x)$) dat o dau ben phai duong bang \node[right].
 - Neu co log loi bien dich, hay sua dung loi do (thuong do ky tu dac biet chua escape, thieu $, hoac thua/thieu dau ngoac).
+- Duong cong phai MUOT: them "smooth" vao \addplot/\draw plot coordinates, hoac ve bang bieu thuc \addplot[smooth,domain=a:b,samples=100]{...}. Khong noi diem bang doan thang tru khi la duong gap khuc.
 - Tra ve toan bo code TikZ moi (day du), khong chi tra phan thay doi.
 - change_note: mot cau ngan tieng Viet mo ta da sua gi.`;
 
