@@ -37,7 +37,8 @@
       {
         "provider": "github",
         "owner": "THoa2102",
-        "repo": "mathbank-tikz-studio"
+        "repo": "mathbank-tikz-studio",
+        "releaseType": "release"
       }
     ],
     "mac": {
