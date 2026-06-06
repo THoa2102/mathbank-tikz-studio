@@ -222,18 +222,26 @@ Quy tac bat buoc:
 - Code sach, ngan, de sua. Nhan diem ro rang, hinh can doi de in.
 - KHONG them du kien khong co trong anh. Neu khong chac, ghi vao warnings.
 - Uoc luong toa do tuong doi de dung lai hinh cho giong anh nhat co the.
+- Net ve day: luon dung tuy chon "line width=1pt" o moi truong tikzpicture (da co san trong khung mau). Cac duong chinh co the dung "thick" hoac line width >= 1pt.
 
-QUY TAC VE CHU/TEXT trong hinh (rat quan trong):
+QUY TAC VE CHU/TEXT trong hinh (rat quan trong, neu sai se loi bien dich):
 - MOI chu, nhan, cau, chu thich PHAI nam BEN TRONG moi truong tikzpicture, dat bang \node tai dung vi tri nhin thay trong anh.
 - TUYET DOI KHONG dat chu roi (caption) o giua \end{tikzpicture} va \end{center}, cung khong de chu ngoai tikzpicture.
 - Chep lai chu tieng Viet CHINH XAC tung ky tu va dau (vi du: Duong cao, Dinh parabol, Dien tich...). Giu nguyen dau tieng Viet.
-- Cong thuc Toan dat trong $...$. Chu thuong (van ban) thi de nguyen, dung bao trong $...$.
+- PHAI ESCAPE ky tu dac biet LaTeX khi nam trong text (neu khong se loi): viet \% \& \# \_ \{ \} thay vi % & # _ { }. Vi du "Chiem 50% dien tich" PHAI viet "Chiem 50\% dien tich".
+- Chi so duoi/tren va cong thuc Toan PHAI dat trong $...$ (vi du $x_1$, $a^2$, $\frac12$). KHONG de _ hay ^ tran ngoai math.
 - Neu trong pgfplots, dung \node[anchor=...] at (axis cs:x,y) {...} de dat chu o dung toa do du lieu.
 - Trong tkz-euclide dung \tkzLabelPoint / \node de dat chu, khong de chu lo ra ngoai.
 
+QUY TAC DAT TEN DUONG/HAM/MIEN (vd y=f(x), (C), (P), (d)):
+- Dat ten o DAU BEN PHAI cua duong, bang \node[right] (hoac [above right]) tai diem cuoi ben phai cua duong, KHONG de nhan de len duong.
+- Vi du voi do thi: \node[right] at (<diem cuoi phai cua duong>) {$y=f(x)$};
+- Voi pgfplots co the dung: \addplot[...] {expr} node[pos=1, right] {$y=f(x)$};
+- Giu nguyen ten nhin thay trong anh (vd $y=f'(x)$, $(C)$, $(P)$).
+
 Dinh dang tikz_code BAT BUOC dung khung sau (KHONG co bat ky chu nao ngoai tikzpicture):
 \begin{center}
-\begin{tikzpicture}[scale=0.9, line join=round, line cap=round, >=stealth]
+\begin{tikzpicture}[scale=0.9, line width=1pt, line join=round, line cap=round, >=stealth]
 % toan bo noi dung, ke ca chu, deu o trong day
 \end{tikzpicture}
 \end{center}
@@ -361,6 +369,8 @@ Quy tac bat buoc:
 - Bien dich bang pdfLaTeX. KHONG fontspec, KHONG package la. Chi dung: tikz, tkz-euclide, tikz-3dplot, tkz-tab, pgfplots va thu vien tikz pho bien.
 - KHONG them du kien khong co trong yeu cau hoac anh goc.
 - MOI chu/nhan phai nam BEN TRONG tikzpicture (dat bang \node), KHONG de chu roi giua \end{tikzpicture} va \end{center}. Giu nguyen dau tieng Viet, chinh xac tung ky tu.
+- PHAI escape ky tu dac biet trong text: \% \& \# \_ ; chi so/cong thuc dat trong $...$. Giu net ve "line width=1pt". Ten duong/ham (vd $y=f(x)$) dat o dau ben phai duong bang \node[right].
+- Neu co log loi bien dich, hay sua dung loi do (thuong do ky tu dac biet chua escape, thieu $, hoac thua/thieu dau ngoac).
 - Tra ve toan bo code TikZ moi (day du), khong chi tra phan thay doi.
 - change_note: mot cau ngan tieng Viet mo ta da sua gi.`;
 

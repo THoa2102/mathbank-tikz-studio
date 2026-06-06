@@ -211,7 +211,7 @@ function buildTikz(scene) {
   const points = pointMap(scene);
   const lines = [
     "\\begin{center}",
-    "\\begin{tikzpicture}[scale=0.9, line join=round, line cap=round, >=stealth]"
+    "\\begin{tikzpicture}[scale=0.9, line width=1pt, line join=round, line cap=round, >=stealth]"
   ];
 
   for (const point of scene.points || []) {
@@ -258,7 +258,7 @@ function buildGraphTikz(scene) {
   const points = pointMap(scene);
   const lines = [
     "\\begin{center}",
-    "\\begin{tikzpicture}[scale=0.9, line join=round, line cap=round, >=stealth]",
+    "\\begin{tikzpicture}[scale=0.9, line width=1pt, line join=round, line cap=round, >=stealth]",
     `\\draw[->] (${axes.xMin},0)--(${axes.xMax + 0.25},0) node[below] {$x$};`,
     `\\draw[->] (0,${axes.yMin})--(0,${axes.yMax + 0.25}) node[left] {$y$};`,
     `\\node[below left] at (0,0) {$${axes.originLabel || "O"}$};`
@@ -773,6 +773,44 @@ function hideCompiledPreview() {
   dom.browserPreview.hidden = false;
 }
 
+async function requestPreview(tikzCode) {
+  const response = await fetch("/api/preview", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ tikzCode })
+  });
+  const payload = await response.json();
+  return { ok: response.ok, svg: payload.svg, error: payload.error };
+}
+
+function showCompiledSvg(svg) {
+  const blob = new Blob([svg], { type: "image/svg+xml" });
+  hideCompiledPreview();
+  state.compiledObjectUrl = URL.createObjectURL(blob);
+  dom.compiledPreview.src = state.compiledObjectUrl;
+  dom.compiledPreview.hidden = false;
+  dom.browserPreview.hidden = true;
+}
+
+// Khi compile loi, nho AI sua code (escape ky tu dac biet, them $...$, ...) roi tra code moi.
+async function autoFixCompile(tikzCode, errorLog) {
+  try {
+    const response = await fetch("/api/fix", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        currentTikz: tikzCode,
+        userInstruction: `Code TikZ bi loi bien dich pdfLaTeX. Log loi:\n${String(errorLog || "").slice(0, 1500)}\n\nHay sua de bien dich duoc. Loi hay gap: ky tu dac biet chua escape trong text (% & # _), thieu $...$ cho cong thuc, thieu/thua dau ngoac. Giu nguyen y nghia hinh.`
+      })
+    });
+    const payload = await response.json();
+    if (response.ok && payload.tikzCode) return payload.tikzCode;
+  } catch {
+    // bo qua, se bao loi goc
+  }
+  return null;
+}
+
 async function compilePreview() {
   const tikzCode = dom.tikzCode.value.trim();
   if (!tikzCode) {
@@ -784,23 +822,24 @@ async function compilePreview() {
   dom.compileButton.disabled = true;
 
   try {
-    const response = await fetch("/api/preview", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tikzCode })
-    });
-    const payload = await response.json();
+    let result = await requestPreview(tikzCode);
 
-    if (!response.ok) {
-      throw new Error(payload.error || "Compile lỗi.");
+    // Tu sua loi bien dich bang AI (neu co key) roi thu lai 1 lan.
+    if (!result.ok && state.aiReady) {
+      setPreviewStatus("Đang tự sửa lỗi…", "");
+      const fixed = await autoFixCompile(tikzCode, result.error);
+      if (fixed && fixed.trim() !== tikzCode) {
+        dom.tikzCode.value = fixed;
+        result = await requestPreview(fixed);
+        if (result.ok) showToast("AI đã tự sửa lỗi biên dịch.");
+      }
     }
 
-    const blob = new Blob([payload.svg], { type: "image/svg+xml" });
-    hideCompiledPreview();
-    state.compiledObjectUrl = URL.createObjectURL(blob);
-    dom.compiledPreview.src = state.compiledObjectUrl;
-    dom.compiledPreview.hidden = false;
-    dom.browserPreview.hidden = true;
+    if (!result.ok) {
+      throw new Error(result.error || "Compile lỗi.");
+    }
+
+    showCompiledSvg(result.svg);
     setPreviewStatus("Đã compile", "ok");
   } catch (error) {
     setPreviewStatus("Compile lỗi", "error");
