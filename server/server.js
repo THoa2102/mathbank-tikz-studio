@@ -130,8 +130,45 @@ ${tikzCode}
 `;
 }
 
+// Cache ket qua compile theo noi dung code -> tra ngay lap tuc khi preview lai code giong het.
+const previewCache = new Map();
+const PREVIEW_CACHE_MAX = 50;
+
+function cacheGet(key) {
+  if (!previewCache.has(key)) return null;
+  const value = previewCache.get(key);
+  // Dua len dau (LRU don gian).
+  previewCache.delete(key);
+  previewCache.set(key, value);
+  return value;
+}
+
+function cacheSet(key, value) {
+  previewCache.set(key, value);
+  if (previewCache.size > PREVIEW_CACHE_MAX) {
+    previewCache.delete(previewCache.keys().next().value);
+  }
+}
+
+async function renderTikzToSvg(tikzCode) {
+  const workDir = await fsp.mkdtemp(path.join(os.tmpdir(), "mathbank-tikz-"));
+  try {
+    const dviFile = path.join(workDir, "preview.dvi");
+    const svgFile = path.join(workDir, "preview.svg");
+    await fsp.writeFile(path.join(workDir, "preview.tex"), buildPreviewDocument(tikzCode), "utf8");
+    await runCommand(
+      "latex",
+      ["-no-shell-escape", "-interaction=nonstopmode", "-halt-on-error", "preview.tex"],
+      workDir
+    );
+    await runCommand("dvisvgm", ["--no-fonts", "--exact", "--output=preview.svg", dviFile], workDir);
+    return await fsp.readFile(svgFile, "utf8");
+  } finally {
+    await fsp.rm(workDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 async function compileTikz(req, res) {
-  let workDir;
   try {
     const rawBody = await readBody(req);
     const payload = JSON.parse(rawBody || "{}");
@@ -147,27 +184,31 @@ async function compileTikz(req, res) {
       return;
     }
 
-    workDir = await fsp.mkdtemp(path.join(os.tmpdir(), "mathbank-tikz-"));
-    const texFile = path.join(workDir, "preview.tex");
-    const dviFile = path.join(workDir, "preview.dvi");
-    const svgFile = path.join(workDir, "preview.svg");
+    const cacheKey = crypto.createHash("sha256").update(tikzCode).digest("hex");
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+      sendJson(res, 200, { svg: cached, cached: true });
+      return;
+    }
 
-    await fsp.writeFile(texFile, buildPreviewDocument(tikzCode), "utf8");
-    await runCommand(
-      "latex",
-      ["-no-shell-escape", "-interaction=nonstopmode", "-halt-on-error", "preview.tex"],
-      workDir
-    );
-
-    await runCommand("dvisvgm", ["--no-fonts", "--exact", "--output=preview.svg", dviFile], workDir);
-    const svg = await fsp.readFile(svgFile, "utf8");
+    const svg = await renderTikzToSvg(tikzCode);
+    cacheSet(cacheKey, svg);
     sendJson(res, 200, { svg });
   } catch (error) {
     sendJson(res, 500, { error: error.message || "Khong compile duoc TikZ." });
-  } finally {
-    if (workDir) {
-      await fsp.rm(workDir, { recursive: true, force: true }).catch(() => {});
-    }
+  }
+}
+
+// Compile thu mot hinh nho luc khoi dong de "lam nong" cache cua TeX/he dieu hanh,
+// giup lan preview dau tien cua nguoi dung khong bi giat.
+async function warmUpLatex() {
+  try {
+    await renderTikzToSvg(
+      "\\begin{center}\\begin{tikzpicture}\\draw (0,0)--(1,1);\\end{tikzpicture}\\end{center}"
+    );
+    console.log("Da lam nong LaTeX, preview se nhanh hon.");
+  } catch {
+    // Khong sao neu warm-up that bai (vi du chua cai LaTeX).
   }
 }
 
@@ -182,10 +223,18 @@ Quy tac bat buoc:
 - KHONG them du kien khong co trong anh. Neu khong chac, ghi vao warnings.
 - Uoc luong toa do tuong doi de dung lai hinh cho giong anh nhat co the.
 
-Dinh dang tikz_code BAT BUOC dung khung sau:
+QUY TAC VE CHU/TEXT trong hinh (rat quan trong):
+- MOI chu, nhan, cau, chu thich PHAI nam BEN TRONG moi truong tikzpicture, dat bang \node tai dung vi tri nhin thay trong anh.
+- TUYET DOI KHONG dat chu roi (caption) o giua \end{tikzpicture} va \end{center}, cung khong de chu ngoai tikzpicture.
+- Chep lai chu tieng Viet CHINH XAC tung ky tu va dau (vi du: Duong cao, Dinh parabol, Dien tich...). Giu nguyen dau tieng Viet.
+- Cong thuc Toan dat trong $...$. Chu thuong (van ban) thi de nguyen, dung bao trong $...$.
+- Neu trong pgfplots, dung \node[anchor=...] at (axis cs:x,y) {...} de dat chu o dung toa do du lieu.
+- Trong tkz-euclide dung \tkzLabelPoint / \node de dat chu, khong de chu lo ra ngoai.
+
+Dinh dang tikz_code BAT BUOC dung khung sau (KHONG co bat ky chu nao ngoai tikzpicture):
 \begin{center}
 \begin{tikzpicture}[scale=0.9, line join=round, line cap=round, >=stealth]
-% noi dung
+% toan bo noi dung, ke ca chu, deu o trong day
 \end{tikzpicture}
 \end{center}
 
@@ -311,6 +360,7 @@ Quy tac bat buoc:
 - Giu khung \begin{center}...\end{center} va \begin{tikzpicture}...\end{tikzpicture}.
 - Bien dich bang pdfLaTeX. KHONG fontspec, KHONG package la. Chi dung: tikz, tkz-euclide, tikz-3dplot, tkz-tab, pgfplots va thu vien tikz pho bien.
 - KHONG them du kien khong co trong yeu cau hoac anh goc.
+- MOI chu/nhan phai nam BEN TRONG tikzpicture (dat bang \node), KHONG de chu roi giua \end{tikzpicture} va \end{center}. Giu nguyen dau tieng Viet, chinh xac tung ky tu.
 - Tra ve toan bo code TikZ moi (day du), khong chi tra phan thay doi.
 - change_note: mot cau ngan tieng Viet mo ta da sua gi.`;
 
@@ -573,6 +623,7 @@ function startServer(listenPort = port) {
           ? `AI Vision: bat (model ${geminiModel})`
           : "AI Vision: tat (chua co API key — vao Cai dat de nhap)"
       );
+      warmUpLatex();
       resolve({ server, port: actualPort });
     });
   });

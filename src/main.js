@@ -148,6 +148,9 @@ const dom = {
   settingsModel: document.querySelector("#settingsModel"),
   settingsStatus: document.querySelector("#settingsStatus"),
   settingsSave: document.querySelector("#settingsSave"),
+  updateBlock: document.querySelector("#updateBlock"),
+  appVersion: document.querySelector("#appVersion"),
+  checkUpdateButton: document.querySelector("#checkUpdateButton"),
   toast: document.querySelector("#toast")
 };
 
@@ -836,6 +839,31 @@ function closeSettings() {
   dom.settingsModal.hidden = true;
 }
 
+// Chi chay khi mo bang app desktop (Electron) — co cau noi window.mathbankDesktop.
+async function initDesktop() {
+  const desktop = window.mathbankDesktop;
+  if (!desktop?.isDesktop) return;
+
+  dom.updateBlock.hidden = false;
+  try {
+    const version = await desktop.getVersion();
+    dom.appVersion.textContent = `v${version}`;
+  } catch {
+    dom.appVersion.textContent = "?";
+  }
+
+  dom.checkUpdateButton.addEventListener("click", async () => {
+    dom.checkUpdateButton.disabled = true;
+    dom.checkUpdateButton.textContent = "Đang kiểm tra…";
+    try {
+      await desktop.checkForUpdates();
+    } finally {
+      dom.checkUpdateButton.disabled = false;
+      dom.checkUpdateButton.textContent = "Kiểm tra cập nhật";
+    }
+  });
+}
+
 async function saveSettings() {
   const body = { geminiModel: dom.settingsModel.value };
   const key = dom.settingsApiKey.value.trim();
@@ -1427,3 +1455,4 @@ renderAll();
 recordHistory();
 loadLibrary();
 checkAiConfig();
+initDesktop();

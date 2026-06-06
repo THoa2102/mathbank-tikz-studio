@@ -1,6 +1,6 @@
 {
   "name": "mathbank-tikz-ai-studio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "MathBank TikZ AI Studio: image input, geometry scene model, TikZ generation, LaTeX preview, ex_test wrapping, interactive editor, and local library.",
   "author": "MathBank",
@@ -33,6 +33,13 @@
     "directories": {
       "output": "dist"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "THoa2102",
+        "repo": "mathbank-tikz-studio"
+      }
+    ],
     "mac": {
       "category": "public.app-category.education",
       "target": [
@@ -48,5 +55,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
   }
 }
